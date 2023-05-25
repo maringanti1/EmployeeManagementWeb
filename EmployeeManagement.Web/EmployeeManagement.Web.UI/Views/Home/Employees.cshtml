@@ -1,0 +1,138 @@
+﻿@model EmployeeManagement.Web.UI.Models.EmployeeManager
+@{
+    ViewData["Title"] = "Home page";
+    // Retrieve the dropdown list data from the ViewBag
+    var managers = ViewBag.managers as List<string>;
+}
+<head>
+    @*<script src="~/lib/jquery/dist/jquery.min.js"></script>*@
+    @*<script src="~/lib/jquery/dist/jquery.js"></script>*@
+</head>
+<style>
+    table.dataTable thead .sorting:after,
+    table.dataTable thead .sorting:before,
+    table.dataTable thead .sorting_asc:after,
+    table.dataTable thead .sorting_asc:before,
+    table.dataTable thead .sorting_asc_disabled:after,
+    table.dataTable thead .sorting_asc_disabled:before,
+    table.dataTable thead .sorting_desc:after,
+    table.dataTable thead .sorting_desc:before,
+    table.dataTable thead .sorting_desc_disabled:after,
+    table.dataTable thead .sorting_desc_disabled:before {
+        bottom: .5em;
+    }
+</style>
+<script type="text/javascript">
+    $(document).ready(function () {
+        populateManagers();
+        var table = $('#dtManager').DataTable({
+            // Configure DataTable options and styling
+        });
+
+        $("#managerName").change(function () {
+             var table = $('#dtManager').DataTable();
+             table.clear(); // Clear existing data in the DataTable
+            // Perform the desired action here
+            var selectedmanager = $(this).val();
+            //alert(selectedmanager);
+            console.log("Selected manager: " + selectedmanager);
+            //$('#dtManager').DataTable({
+            //    paging: true,
+            //    ordering: true,
+            //    searching: true,
+            //    // Add additional options as needed
+            //});
+
+            // Make an AJAX request to the Web API
+            $.ajax({
+                url: 'https://localhost:44362/api/EmployeeManagement/lookup',
+                type: 'GET',
+                data: { EmployeeManagerID: selectedmanager },
+                success: function (response) { 
+                    // Clear existing data in the DataTable
+                    table.clear();
+                    if (response && response.length > 0) {
+                    // Populate the DataTable with the API response
+                    $.each(response, function (index, item) {
+                        table.row.add([
+                            item.firstName,
+                            item.lastName,
+                            item.email,
+                            item.phone
+                        ]).draw(false);
+                    });
+                    }
+                 else {
+                   // If the response is null or has a count of zero, display a message in the DataTable body
+                    //var messageRow = $('<tr>').append($('<td colspan="6" class="text-center">').text('Employees are not available for this manager!'));
+                    table.clear().draw();
+                    //table.rows.add(messageRow).draw();
+                }
+                },
+                error: function (xhr, status, error) {
+                    // Handle the error response from the Web API
+                    console.log("API error:", error);
+                    // Display an error message or perform any necessary error handling
+                }
+            });
+        });
+    });
+
+    // Function to populate the dropdown
+    function populateManagers() {
+        $.ajax({
+            url: 'https://localhost:44362/api/EmployeeManagement/getallmanagers',
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                var dropdown = $('#managerName');
+                dropdown.empty(); // Clear existing options
+                dropdown.append($('<option>').text('Select a manager').val('')); // Add default option
+                $.each(data, function (index, manager) {
+                    dropdown.append($('<option>').text(manager.firstName + ' '+ manager.lastName ).val(manager.managerId));
+                });
+            },
+            error: function (xhr, status, error) {
+                console.log(error);
+            }
+        });
+    }
+
+</script>
+
+<div class="form-group">
+    @Html.LabelFor(model => model.ManagerId, "Select a manager", new { @class = "control-label" })
+    <div class="input-group">
+
+        @Html.DropDownListFor(model => model.ManagerId,  Enumerable.Empty<SelectListItem>(), "Please select a manager", new { @class = "form-control", id = "managerName"})
+
+    </div>
+    @Html.ValidationMessageFor(model => model.ManagerId, "", new { @class = "text-danger" })
+</div>
+
+<table id="dtManager" class="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
+    <thead>
+        <tr>
+            <th class="th-sm">
+                First Name
+            </th>
+            <th class="th-sm">
+                Last Name
+            </th> 
+            <th class="th-sm">
+                Email
+            </th>
+            <th class="th-sm">
+                Phone
+            </th>
+            
+        </tr>
+    </thead>
+    <tbody>
+       
+    </tbody>
+    <tfoot>
+        <tr>
+        </tr>
+    </tfoot>
+</table>
